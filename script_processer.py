@@ -74,7 +74,7 @@ class script_process:
             elif i.startswith('('):
                 i = i.replace('(','')
                 i = i.replace(')','')
-                i = '\t' + i
+                i = '\n\t' + i 
                 count = 0
                 for j in range(len(i)):
                     if count > 60 and i[j].isspace():
