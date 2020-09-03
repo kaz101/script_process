@@ -11,8 +11,9 @@ class script_process:
         self.s_counter = 0
         self.t_counter = 0
         self.b_counter = 0
-        self.script, self.script_file = self.open_file('mahscript.txt')
-        self.transcript, self.transcript_file = self.open_file('move_along_home.txt')
+        self.script, self.script_file = self.open_file('410.txt')
+        self.transcript, self.transcript_file = self.open_file('tapestry')
+        #self.transcript_done, self.transcript_file = self.open_file('final_dialog')
         self.transcript_done = []
         self.script_done = []
         self.brackets_list = []
@@ -24,8 +25,19 @@ class script_process:
         ''' strips the dialoge and other cruft
             out of the script '''
         for i in range(len(self.script)):
-            if 'ANGLE' in self.script[i]:
-                self.script[i] = self.script[i].replace('ANGLE','WE FOCUS')
+            if self.script[i][0].isdigit():
+                if ('INT.' in self.script[i] or
+                    'EXT.' in self.script[i]
+                ):
+                    self.script[i] = self.script[i].replace('INT.','')
+                    self.script[i] = self.script[i].replace('EXT.','')
+                for j in self.script[i]:
+                    if j.isspace():
+                        self.script[i] =(
+                        self.script[i][:self.script[i].index(j) + 1] +
+                        'WE FOCUS ON' +
+                        self.script[i][self.script[i].index(j) + 2:])
+                        break
         #    if self.script[i].startswith('\t\t\t'):
                 #brackets = re.findall(r'\([^)]*\)',self.script[i])
                 #self.brackets_list.extend(brackets)
@@ -37,43 +49,75 @@ class script_process:
                 or 'OMITTED'in self.script[i]
                 ):
                 continue
-            else:
-                self.script_done.append(self.script[i])
+            #else:
+            self.script_done.append(self.script[i])
+        self.save_script()
+
     def process_transcript(self):
         ''' Captures only the dialoge, strips out everything else
             and formats like the script '''
         for i in self.transcript:
-            i = re.sub(r'\([^)]*\)','',i)
-            if(
-                i.startswith('(')
-                or i.startswith('[')
-                or i.isspace()
-                ):
-                continue
-            else:
-                i = i.replace('LAFORGE','GEORDI')
-                if ':' in i:
-                    i = '-\n\t\t\t\t' + i
-                else:
-                    i = '\t\t ' + i
-
-                i = i.replace(':','\n\t\t')
-                i = i.replace('. ','.\n\t\t ')
+            #i = re.sub(r'\([^)]*\)','',i)
+            #if(
+            #    i.startswith('(')
+            #    or i.startswith('[')
+            #    or i.isspace()
+            #    ):
+            #    continue
+            #else:
+            #i = i.replace('LAFORGE','GEORDI')
+            if i.startswith('['):
+                i = 'WE FOCUS ON '+i
+                i = i.replace('[','')
+                i = i.replace(']','')
+                i = i.upper()
+            elif i.startswith('('):
+                i = i.replace('(','')
+                i = i.replace(')','')
+                i = '\t' + i
+                count = 0
+                for j in range(len(i)):
+                    if count > 60 and i[j].isspace():
+                        i = i[:j] + '\n\t' + i[j+1:]
+                        count = 0
+                    else:
+                        count += 1
+            elif ':' in i:
+                i = '\n\t\t\t\t' + i + '\n'
+        #        i = '\t\t ' + i
+                i = i.replace(': ','\n\t\t')
+                #i = i.replace('. ','.\n\t\t')
                 count = 0
                 for j in range(len(i)):
                     if i[j] == '\n':
                         count = 0
                     if count > 30 and i[j].isspace():
-                        i = i[:j] + '\n\t\t' + i[j:]
+                        i = i[:j] + '\n\t\t' + i[j+1:]
+                    #    i = i.replace('\t ','\t')
                         count = 0
                     else:
                         count += 1
-                self.transcript_done.append(i)
+            else:
+                i = '\t\t' + i + '\n'
+                count = 0
+                for j in range(len(i)):
+                    if count > 30 and i[j].isspace():
+                        i = i[:j] + '\n\t\t' + i[j+1:]
+                        count = 0
+                    else:
+                        count += 1
+
+
+            #i.replace('\t ','\t')
+            i = i.replace('\n\n','\n')
+            self.transcript_done.append(i)
     def scroll_script(self):
-        self.final_list.append(self.script_done[self.s_counter])
-        self.s_counter += 1
-        for i in self.final_list:
-            print(i)
+        try:
+            self.final_list.append(self.script_done[self.s_counter])
+            self.s_counter += 1
+        except:
+            self.save_to_file()
+            print('File Saved !!!')
     def script_back(self):
         self.final_list.pop(-1)
         self.s_counter -= 1
@@ -82,16 +126,10 @@ class script_process:
     def scroll_transcript(self):
         self.final_list.append(self.transcript_done[self.t_counter])
         self.t_counter += 1
-        for i in self.final_list:
-            print(i)
     def transcript_back(self):
         self.final_list.pop(-1)
         self.t_counter -= 1
-        for i in self.final_list:
-            print(i)
     def ui(self):
-        for i in self.final_list:
-            print(i)
         print('-'*80)
         try:
             print(self.transcript_done[self.t_counter])
@@ -146,8 +184,12 @@ class script_process:
             transcript.append(dialog1)
         self.t_counter = 0
         self.transcript_done = transcript
+    def save_script(self):
+        with open('final_script','+w') as f:
+            for i in self.script_done:
+                f.write(i)
     def save_dialog(self):
-        with open('final_dialog','+w') as f:
+        with open('final_dialog1','+w') as f:
             for i in self.transcript_done:
                 f.write(i)
     def get_brackets(self):
@@ -164,12 +206,13 @@ class script_process:
         self.brackets_list.extend(brackets)
 
 s = script_process()
-s.process_script()
+#s.process_script()
 s.process_transcript()
-s.get_brackets()
-s.process_brackets()
+#s.get_brackets()
+#s.process_brackets()
 s.save_dialog()
-print(s.brackets_list)
+print (s.transcript_done)
+'''
 while True:
     x = input()
     if x == '':
@@ -191,3 +234,4 @@ while True:
         s.save_to_file()
     if x == 'q':
         break
+'''
