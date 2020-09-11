@@ -61,11 +61,12 @@ class script_process:
                     break
         print(self.script_url)
         self.browser.get(self.script_url)
-        self.body = self.browser.find_elements_by_tag_name('p')
+        self.body = self.browser.find_elements_by_tag_name('font')
         self.body_text = []
         for i in self.body:
             i = i.text.split('\n')
             self.body_text.extend(i)
+        print(self.body_text)
     def process_transcript(self):
         ''' Captures only the dialoge, strips out everything else
             and formats like the script '''
@@ -95,7 +96,8 @@ class script_process:
                         count = 0
                     else:
                         count += 1
-            elif ':' in i:
+            elif ':' in i or i.startswith('\t'):
+                #print (i)
                 i = '\n\t\t\t\t' + i + '\n'
         #        i = '\t\t ' + i
                 i = i.replace(': ','\n\t\t')
