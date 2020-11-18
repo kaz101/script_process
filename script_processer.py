@@ -10,12 +10,12 @@ class script_process:
     def __init__(self):
         ''' initalize variables '''
         self.browser = webdriver.Chrome()
+        self.save_path = 'C:\\Users\\kaz10\\Google Drive\\public\\scripts\\'
         try:
             self.episode = ' '.join(sys.argv[1:])
         except:
             print('You must give an episode to find')
         self.transcript_done = []
-
     def get_transcript(self):
         self.browser.get('http://www.chakoteya.net/StarTrek/')
         self.link_elements = self.browser.find_elements_by_tag_name('a')
@@ -28,8 +28,7 @@ class script_process:
                 if 'fortyseven' in self.links[j]:
                     self.links.pop(j)
         for i in self.links:
-        #    time.sleep(1)
-            print(i)
+        #    print(i)
             if (
             'StarTrek' in i or
             'NextGen' in i or
@@ -43,8 +42,8 @@ class script_process:
             else:
                 continue
             for j in series_elements:
-                print(self.episode)
-                print(j.text)
+            #    print(self.episode)
+            #    print(j.text)
                 if self.episode.lower() in j.get_attribute('text').lower():
                     print('found it')
                     if 'Voyager' in i:
@@ -57,38 +56,34 @@ class script_process:
                         self.series = 'ENT'
                     elif 'StarTrek' in i:
                         self.series = 'TOS'
+                    elif 'movies' in i:
+                        self.series = 'MOV'
                     self.script_url = j.get_attribute('href')
                     break
-        print(self.script_url)
+                    #print(self.script_url)
         self.browser.get(self.script_url)
         self.body = self.browser.find_elements_by_tag_name('font')
         self.body_text = []
         for i in self.body:
-            i = i.text.split('\n')
+        #    print(i.text)
+            if ':' in i.text or '[' in i.text:
+                i = i.text.split('\n')
+            else:
+                i = ['LOG: '+i.text]
             self.body_text.extend(i)
-        print(self.body_text)
     def process_transcript(self):
         ''' Captures only the dialoge, strips out everything else
             and formats like the script '''
         for i in self.body_text:
-            #i = re.sub(r'\([^)]*\)','',i)
-            #if(
-            #    i.startswith('(')
-            #    or i.startswith('[')
-            #    or i.isspace()
-            #    ):
-            #    continue
-            #else:
-            #i = i.replace('LAFORGE','GEORDI')
             if i.startswith('['):
-                i ='\n'+'WE FOCUS ON '+i+'\n'
-                i = i.replace('[','')
-                i = i.replace(']','')
+                i ='\n' + 'WE FOCUS ON ' + i + '\n'
+                i = i.replace('[', '')
+                i = i.replace(']', '')
                 i = i.upper()
             elif i.startswith('('):
-                i = i.replace('(','')
-                i = i.replace(')','')
-                i = '\n\t' + i +'\n'
+                i = i.replace('(', '')
+                i = i.replace(')', '')
+                i = '\n\t' + i + '\n'
                 count = 0
                 for j in range(len(i)):
                     if count > 60 and i[j].isspace():
@@ -96,44 +91,40 @@ class script_process:
                         count = 0
                     else:
                         count += 1
-            elif ':' in i or i.startswith('\t'):
-                #print (i)
+            elif ':' in i:
                 i = '\n\t\t\t\t' + i + '\n'
-        #        i = '\t\t ' + i
                 i = i.replace(': ','\n\t\t')
-                #i = i.replace('. ','.\n\t\t')
                 count = 0
                 for j in range(len(i)):
                     if i[j] == '\n':
                         count = 0
-                    if count > 30 and i[j].isspace():
+                    if count > 40 and i[j].isspace():
                         i = i[:j] + '\n\t\t' + i[j+1:]
-                    #    i = i.replace('\t ','\t')
                         count = 0
                     else:
                         count += 1
             elif i.startswith('<'):
                 break
             else:
-                i = '\t\t' + i + '\n'
+                i = '\n\t\t' + i + '\n'
                 count = 0
                 for j in range(len(i)):
-                    if count > 30 and i[j].isspace():
+                    if count > 40 and i[j].isspace():
                         i = i[:j] + '\n\t\t' + i[j+1:]
                         count = 0
                     else:
                         count += 1
-
-
-            #i.replace('\t ','\t')
             i = i.replace('\n\n','\n')
             self.transcript_done.append(i)
     def save_dialog(self):
-        with open(f"C:\\Users\\kaz10\\Google Drive\\public\\scripts\\Star Trek Radio Theater {self.series} '{self.body_text[0]}' Script V1",'w') as f:
+        self.body_text[0] = self.body_text[0].replace('LOG: ', '')
+        self.body_text[0] = self.body_text[0].replace(':', '')
+        self.body_text[0] = self.body_text[0].replace('?', '')
+        with open(f"{self.save_path}Star Trek Radio Theater {self.series} '{self.body_text[0]}' Script V1",'w+',encoding='utf8') as f:
+            print(self.body_text[0])
             for i in self.transcript_done:
-                i
+                print(i)
                 f.write(i)
-            f.close()
 
 s = script_process()
 s.get_transcript()
